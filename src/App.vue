@@ -13,6 +13,7 @@
         overflow: hidden;
         background: #fff;
         border-radius: 4px;
+        border-size: 1px;
     }
     .layout-content-main{
         padding: 10px;
@@ -27,7 +28,7 @@
     }
     .layout-header{
         height: 60px;
-        background: #fff;
+        background: #5b6270;
         box-shadow: 0 1px 1px rgba(0,0,0,.1);
     }
     .layout-logo-left{
@@ -36,42 +37,44 @@
         background: #5b6270;
         border-radius: 3px;
         margin: 15px auto;
+        text-align: center;
+        line-height: 30px;
     }
 </style>
 <template>
     <div class="layout">
         <Row type="flex">
-            <Col span="5" class="layout-menu-left">
+            <Col span="3" class="layout-menu-left">
                 <Menu theme="dark" width="auto" :open-names="['1']">
-                    <div class="layout-logo-left"></div>
+                    <div class="layout-logo-left"><span><font color="white"><B>PROPHET</B></font></span></div>
                     <Submenu name="1">
                         <template slot="title">
-                            <Icon type="ios-navigate"></Icon>
-                            Item 1
+                            <Icon type="ios-keypad"></Icon>
+                            hive操作
                         </template>
-                        <MenuItem name="1-1" @click.native="forward('account')">账号管理</MenuItem>
-                        <MenuItem name="1-2"  @click.native="forward('role')">角色管理</MenuItem>
-                        <MenuItem name="1-3">Option 3</MenuItem>
+                        <MenuItem name="1-1" @click.native="forward('hive_query')"><Icon type="ios-list-outline"></Icon>发起hive查询</MenuItem>
+                        <MenuItem name="1-2" @click.native="forward('hive_create_table')"><Icon type="ios-pricetag"></Icon>创建hive表</MenuItem>
+                        <MenuItem name="1-3" @click.native="forward('hive_list_tables')"><Icon type="ios-chatboxes-outline"></Icon>我的hive表</MenuItem>
                     </Submenu>
                     <Submenu name="2">
                         <template slot="title">
-                            <Icon type="ios-keypad"></Icon>
-                            Item 2
+                            <Icon type="ios-analytics"></Icon>
+                            hive报表
                         </template>
-                        <MenuItem name="2-1">Option 1</MenuItem>
-                        <MenuItem name="2-2">Option 2</MenuItem>
+                        <MenuItem name="3-1"><Icon type="ios-analytics"></Icon>Option 1</MenuItem>
+                        <MenuItem name="3-2"><Icon type="ios-analytics"></Icon>Option 2</MenuItem>
                     </Submenu>
                     <Submenu name="3">
                         <template slot="title">
                             <Icon type="ios-analytics"></Icon>
-                            Item 3
+                            定时任务
                         </template>
-                        <MenuItem name="3-1">Option 1</MenuItem>
-                        <MenuItem name="3-2">Option 2</MenuItem>
+                        <MenuItem name="3-1"><Icon type="ios-analytics"></Icon>Option 1</MenuItem>
+                        <MenuItem name="3-2"><Icon type="ios-analytics"></Icon>Option 2</MenuItem>
                     </Submenu>
                 </Menu>
             </Col>
-            <Col span="19">
+            <Col span="21">
                 <div class="layout-header"></div>
                 <div class="layout-breadcrumb">
                     <Breadcrumb>
@@ -82,10 +85,7 @@
                 </div>
                 <div class="layout-content">
                     <router-view/>
-                </div>
-                <div class="layout-copy">
-                    2011-2016 &copy; TalkingData
-                </div>
+                </div>                
             </Col>
         </Row>
     </div>
