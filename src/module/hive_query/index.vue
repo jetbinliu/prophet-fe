@@ -68,12 +68,18 @@
                     <div style="margin: 10px 10px;">
                         <Tabs type="card" closable @on-tab-remove="handleTabRemove">
                             <TabPane label="历史查询" v-if="tab0">
-                                <Select v-model="model1"  clearable placeholder="请选择城市" @on-change="refresh" style="width:200px">
+                                <!-- <Select v-model="model1"  clearable placeholder="请选择城市" @on-change="refresh" style="width:200px">
                                      <Option v-for="item in cityList" :value="item.value" :key="item.value">{{ item.label }}</Option>
-                                </Select>
+                                </Select> -->
+                                <Table size="small" stripe :columns="colHistQuery" :data="dataHistQuery">
+                                    
+                                </Table>
+
                             </TabPane>
                             <TabPane label="历史结果" v-if="tab1">
-                                <Table stripe :columns="columns1" :data="data1"></Table>
+                                <Table size="small" stripe :columns="columns1" :data="data1">
+                                    
+                                </Table>
                                 <router-link to="/home">Go to Foo</router-link>
                             </TabPane>
                             <TabPane label="标签三" v-if="tab2">标签三的内容</TabPane>
@@ -95,24 +101,39 @@
                 model1: '',
                 columns1: [
                     {
-                        title: 'Name',
-                        key: 'name',
+                        title: 'userName',
+                        key: 'userName',
                         sortable: true
                     },
                     {
-                        title: 'Age',
-                        key: 'age',
+                        title: 'password',
+                        key: 'password',
                         sortable: true
-                    },
-                    {
-                        title: 'Address',
-                        key: 'address'
                     }
                 ],
                 data1: [],
                 tab0: true,
                 tab1: true,
-                tab2: true
+                tab2: true,
+                colHistQuery: [
+                    {
+                        title: 'Id',
+                        key: 'queryId',
+                    },
+                    {
+                        title: '查询时间',
+                        key: 'queryTime',
+                    },
+                    {
+                        title: '查询语句',
+                        key: 'query',
+                    },
+                    {
+                        title: '任务状态',
+                        key: 'status',
+                    }
+                ],
+                dataHistQuery: []
             }
         },
         mounted () {
@@ -125,7 +146,8 @@
             getList () {
                 var me = this;
                 getList().then(function(res) {
-                    me.data1 = res.data;
+                    me.data1 = res;
+					debugger;
                 }, function (res) {
                     me.data1 = [
                         {
