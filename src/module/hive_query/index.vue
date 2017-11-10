@@ -1,55 +1,14 @@
 <template>
     <Row>
         <Col span="5">
-            <Menu active-name="1-2" width="auto" :open-names="['1']">
-                <Submenu name="1">
+            <Menu active-name="1-2" width="auto" :open-names="['1']" accordion>
+                <Submenu v-for="(tableValue, dbName) in metastoreDbAndTables" :key="dbName" :name="dbName">
                     <template slot="title">
                         <Icon type="soup-can-outline"></Icon>
-                            default
+                            {{dbName}}
                     </template>
-                    <MenuItem name="1-1">Option 1</MenuItem>
-                    <MenuItem name="1-2">Option 2</MenuItem>
-                    <MenuItem name="1-3">Option 3</MenuItem>
-                    <MenuItem name="1-1">Option 1</MenuItem>
-                    <MenuItem name="1-1">Option 1</MenuItem>
-                    <MenuItem name="1-1">Option 1</MenuItem>
-                    <MenuItem name="1-1">Option 1</MenuItem>
-                    <MenuItem name="1-1">Option 1</MenuItem>
-                    <MenuItem name="1-1">Option 1</MenuItem>
-                    <MenuItem name="1-1">Option 1</MenuItem>
-                    <MenuItem name="1-1">Option 1</MenuItem>
-                    <MenuItem name="1-2">Option 2</MenuItem>
-                    <MenuItem name="1-3">Option 3</MenuItem>
-                    <MenuItem name="1-2">Option 2</MenuItem>
-                    <MenuItem name="1-3">Option 3</MenuItem>
-                    <MenuItem name="1-2">Option 2</MenuItem>
-                    <MenuItem name="1-3">Option 3</MenuItem>
-                    <MenuItem name="1-2">Option 2</MenuItem>
-                    <MenuItem name="1-3">Option 3</MenuItem>
-                    <MenuItem name="1-2">Option 2</MenuItem>
-                    <MenuItem name="1-3">Option 3</MenuItem>
-                    <MenuItem name="1-2">Option 2</MenuItem>
-                    <MenuItem name="1-3">Option 3</MenuItem>
-                    <MenuItem name="1-2">Option 2</MenuItem>
-                    <MenuItem name="1-3">Option 3</MenuItem>
-                    <MenuItem name="1-2">Option 2</MenuItem>
-                    <MenuItem name="1-3">Option 3</MenuItem>
-                    </Submenu>
-                <Submenu name="2">
-                    <template slot="title">
-                        <Icon type="soup-can-outline"></Icon>
-                            formatter
-                    </template>
-                    <MenuItem name="2-1">Option 1</MenuItem>
-                    <MenuItem name="2-2">Option 2</MenuItem>
-                </Submenu>
-                <Submenu name="3">
-                    <template slot="title">
-                        <Icon type="soup-can-outline"></Icon>
-                            users
-                    </template>
-                    <MenuItem name="3-1">Option 1</MenuItem>
-                    <MenuItem name="3-2">Option 2</MenuItem>
+                    <MenuItem v-for="tableLine in tableValue" :key="tableLine.TBL_ID" :name="tableLine.TBL_ID">{{tableLine.TBL_NAME}}
+					</MenuItem>
                 </Submenu>
             </Menu>
         </Col>
@@ -92,7 +51,7 @@
      </Row>
 </template>
 <script>
-    import { getList } from './request';
+    import { getMetaStoreDbAndTables } from './request';
     export default {
         data () {
             return {
@@ -133,43 +92,33 @@
                         key: 'status',
                     }
                 ],
-                dataHistQuery: []
+                dataHistQuery: [],
+				metastoreDbAndTables: {}
             }
         },
         mounted () {
-            this.getList();
+            this.getMetaStoreDbTables();
         },
         methods: {
             refresh () {
                 this.$Message.info('refresh');
             },
-            getList () {
+            getMetaStoreDbTables () {
                 var me = this;
-                getList().then(function(res) {
-                    me.data1 = res;
-					debugger;
+                getMetaStoreDbAndTables().then(function(res) {
+                    me.metastoreDbAndTables = res.data;
                 }, function (res) {
-                    me.data1 = [
-                        {
-                            name: '12312',
-                            age: 125
-                        },
-                         {
-                            name: '12312',
-                            age: 123
-                        },
-                        {
-                            name: '12312',
-                            age: 121
-                        },
-                        {
-                            name: '12312',
-                            age: 12
-                        },{
-                            name: '12312',
-                            age: 100
-                        }
-                    ];
+                    me.metastoreDbAndTables = {
+								default112:[
+									{'TBL_ID':21, 'TBL_NAME':'access_path1', 'TBL_TYPE':'EXTERNAL_TABLE'},
+								   {'TBL_ID':22, 'TBL_NAME':'access_path2', 'TBL_TYPE':'EXTERNAL_TABLE'},
+								   {'TBL_ID':23, 'TBL_NAME':'access_path3', 'TBL_TYPE':'MANAGED_TABLE'}
+								 ],
+								formatter:[
+								   {'TBL_ID':24, 'TBL_NAME':'access_path4', 'TBL_TYPE':'EXTERNAL_TABLE'},
+								   {'TBL_ID':25, 'TBL_NAME':'access_path5', 'TBL_TYPE':'EXTERNAL_TABLE'}
+								 ]
+							  };
                     me.cityList = [
                         {
                             value: '1',
