@@ -1,21 +1,23 @@
 # prophet-fe
 
-> prophet-fe
+> prophet系统的前端代码，采用VUE.js + iview UI框架编写
 
-## Build Setup
+## 如何编译
 
 ``` bash
-# install dependencies
+# 安装依赖
 npm install
 
-# serve with hot reload at localhost:8080
+# 安装vue-jsx插件
+npm install babel-plugin-transform-vue-jsx  -DS
+npm install babel-plugin-syntax-jsx -DS
+
+# 开发：以dev服务器模式启动，监听localhost:8080
 npm run dev
 
-# build for production with minification
+# 生产：会生成静态文件，放在后端项目的webroot即可
 npm run build
 
-# build for production and view the bundle analyzer report
+# 生产：顺便查看bundle analyzer report
 npm run build --report
 ```
-
-For a detailed explanation on how things work, check out the [guide](http://vuejs-templates.github.io/webpack/) and [docs for vue-loader](http://vuejs.github.io/vue-loader).

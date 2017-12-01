@@ -1,3 +1,9 @@
+<style>
+	.query-running-spin {
+		display: flex;
+		align-items: center;
+	}
+</style>
 <template>
     <Row>
         <Col span="5">
@@ -21,6 +27,7 @@
                         <div style="margin-top: 10px; float:right;">
                             <Button type="primary" @click="sendQuery">查询(S)</Button>&nbsp;&nbsp;
                             <Button @click="clearQuery">清空</Button>
+							
                         </div>
                     </div>
                 </Row>
@@ -31,18 +38,25 @@
                                 <!-- <Select v-model="model1"  clearable placeholder="请选择城市" @on-change="refresh" style="width:200px">
                                      <Option v-for="item in cityList" value="item.value" :key="item.value">{{ item.label }}</Option>
                                 </Select> -->
-                                <Table size="small" stripe :columns="colHistQuery" :data="dataHistQuery">
+                                <Table size="small" stripe :columns="colHistQuery" :data="dataHistQuery" @on-row-click="refillSqlContent">
 									
                                 </Table>
-								<router-link to="/home">Go to Foo</router-link>
                             </TabPane>
                             <TabPane label="查询结果" v-if="tabPanels.tabQueryResult.display" name="tabQueryResult">
 								<div>
+									<p>
+									<Button v-if="tabPanels.tabQueryResult.contentType == 'sql_query' && tabPanels.tabQueryResult.status == 0" type="primary" 
+										size="large" @click="exportData()"><Icon type="ios-download-outline"></Icon> 导出成CSV文件
+									</Button>
+									</p>
+									<br/>
 									<Table v-if="tabPanels.tabQueryResult.contentType == 'sql_query' && tabPanels.tabQueryResult.status == 0" size="small" 
 										stripe :columns="tabPanels.tabQueryResult.cols" :data="tabPanels.tabQueryResult.data.result_data" 
-										no-data-text="SQL查询返回的结果集为空. 换个查询条件试试？">
+										no-data-text="SQL查询返回的结果集为空. 换个查询条件试试？" ref="tableResult"
+									>
 										
 									</Table>
+									
 									<Alert v-if="tabPanels.tabQueryResult.contentType == 'sql_query' && tabPanels.tabQueryResult.status != 0" type="error" show-icon>
 										出错啦!
 										<span slot="desc">
@@ -73,6 +87,12 @@
 	import { descTableAjax } from './request';
 	import { sendHiveSqlQuery } from './request';
 	import { saveQueryHistory } from './request';
+	import { getAllQueryHistoryByUser } from './request';
+	import { getQueryStatusById } from './request';
+	import { getHistoryResultById } from './request';
+	
+	import Spin from 'iview/src/components/spin/spin';
+	import Button from 'iview/src/components/button/button';
 	
     export default {
         data () {
@@ -98,32 +118,70 @@
 				currActiveTabPanel: "",
                 colHistQuery: [
                     {
-                        title: 'Id',
-                        key: 'queryId',
-						width: 80
+                        title: '查询语句Id',
+                        key: 'id',
+						width: 100
                     },
                     {
                         title: '查询时间',
                         key: 'queryTime',
+						width: 170
                     },
                     {
                         title: '查询语句',
-                        key: 'query',
+                        key: 'queryContent',
+						width: 300
                     },
                     {
                         title: '任务状态',
-                        key: 'status',
+                        key: 'strStatus'
+						
+                    },
+					{
+                        title: '动作',
+                        key: 'action',
+						render: (h, params) => {
+							var item = params.row;	//item是这一行的数据
+                            return (
+                                <div>
+								{
+									item.status === 0 
+                                    ? <Button type="success" size="small" onClick={this.retrieveResultByQueryId.bind(this, item)}>查看结果</Button>
+                                    : ''
+								}
+								{
+									item.status === 1
+                                    ? <Button type="info" size="small" loading>运行中...</Button>
+                                    : ''
+								}
+								{
+									item.status === 2
+                                    ? <Button type="info" size="small" onClick={this.retrieveResultByQueryId.bind(this, item)}>重新运行</Button>
+                                    : ''
+								}
+								{
+									item.status === 3
+                                    ? <Button type="error" size="small" onClick={this.retrieveResultByQueryId.bind(this, item)}>查看错误</Button>
+                                    : ''
+								}
+								</div>
+							);
+						}
                     }
                 ],
                 dataHistQuery: [
 					
 				],
-				metastoreDbAndTables: {}
+				metastoreDbAndTables: {},
+				clockQueryHistory: {}
             }
         },
         mounted () {
+			this.$Message.config({duration: 3});
 			this.currActiveTabPanel = "tabHistoryQuery";
             this.getMetaStoreDbTables();
+			this.getQueryHistory();
+			
         },
         methods: {
 			//获取metastore里所有库表信息并展现
@@ -195,64 +253,185 @@
 			//向后端发送SQL，并异步获取结果后展现
 			sendQuery() {
 				var me = this;
-				var params = {queryContent : this.sql_content};
-				me.$Message.info("SQL发送成功!");
 				
-				//发送query到后端和获取结果的接口
-				sendHiveSqlQuery(params).then(
-					function (res) {
-						//最后切换焦点到当前tab上
-						me.currActiveTabPanel = "tabQueryResult";
-						
-						var columns = new Array();
-						if (res.data.type == 'sql_query' && res.status == 0) {
-							if (res.data.data.result_cols != null) {
-								//如果结果集不为空，将后端传来的cols信息拼接成VUE Table的columns数组
-								if (res.data.data.result_cols.length >= 8) {
-									for (var index in res.data.data.result_cols) {
-										var colDict = {
-											title : res.data.data.result_cols[index], 
-											key :   res.data.data.result_cols[index],
-											width: 120
-										};
-										columns.push(colDict);
-									}
-								} else {
-									for (var index in res.data.data.result_cols) {
-										var colDict = {
-											title : res.data.data.result_cols[index], 
-											key :   res.data.data.result_cols[index]
-										};
-										columns.push(colDict);
-									}
-								}
-							} else {
-								//如果结果集为空啥都不用做
-							}
+				//如果输入为空
+				if (me.sql_content == '' || me.sql_content == null || me.sql_content == undefined) {
+					me.$Message.error("SQL语句不能为空, 请输入SQL语句内容后提交!");
+				} else {
+					me.$Message.info("SQL已经成功提交，请耐心等待结果!");
+					
+					//初始化一个变量保存数据库返回的id
+					var queryHistoryId = -1;
+					
+					//不管查询是否成功，都保存一条查询历史
+					var queryHistoryParams = {queryContent : me.sql_content};
+					saveQueryHistory(queryHistoryParams).then(
+						function (res) {
+							//获取该条查询历史的id并保存，供后面ajax使用
+							queryHistoryId = res.data;
 							
-							//如果查询成功，则保存一条查询历史
-							saveQueryHistory(params).then(
+							//保存历史成功，刷新当前历史查询页面
+							me.getQueryHistory();
+							me.currActiveTabPanel = "tabHistoryQuery";
+							
+							//然后开始定时轮询后端是否执行完毕
+							var int = setInterval(function(){
+								me.getQueryHistoryStatusById(queryHistoryId)
+							}, 3000);
+							//将指针保存到全局对象里，方便后续clearInterval
+							me.$set(me.clockQueryHistory, queryHistoryId, int);
+							
+							//发送query和刚刚生成的id到后端, 等待hive执行并获取结果展现
+							var params = {queryContent : me.sql_content, queryHistId : queryHistoryId};
+							sendHiveSqlQuery(params).then(
 								function (res) {
-									me.$Message.info("保存查询历史成功!");
-								},
+									var columns = new Array();
+									if (res.data.type == 'sql_query' && res.status == 0) {
+										if (res.data.data.result_cols != null) {
+											//如果结果集不为空，将后端传来的cols信息拼接成VUE Table的columns数组
+											if (res.data.data.result_cols.length >= 8) {
+												for (var index in res.data.data.result_cols) {
+													var colDict = {
+														title : res.data.data.result_cols[index], 
+														key :   res.data.data.result_cols[index],
+														width: 120
+													};
+													columns.push(colDict);
+												}
+											} else {
+												for (var index in res.data.data.result_cols) {
+													var colDict = {
+														title : res.data.data.result_cols[index], 
+														key :   res.data.data.result_cols[index]
+													};
+													columns.push(colDict);
+												}
+											}
+										} else {
+											//如果结果集为空啥都不用做
+										}
+									}
+									
+									//设置标签页数据
+									me.tabPanels.tabQueryResult.status = res.status;
+									me.tabPanels.tabQueryResult.message = res.message;
+									me.tabPanels.tabQueryResult.data = res.data.data;
+									me.tabPanels.tabQueryResult.cols = columns;
+									me.tabPanels.tabQueryResult.contentType = res.data.type;
+
+								}, 
 								function (res) {
-									me.$Message.warning("保存这条查询历史失败!");
+									me.$Message.error("请求后端失败！服务器不知道跑哪里玩儿去了....");
 								}
 							)
+						},
+						function (res) {
+							me.$Message.warning("保存这条查询历史失败!");
 						}
-						me.tabPanels.tabQueryResult.status = res.status;
-						me.tabPanels.tabQueryResult.message = res.message;
-						me.tabPanels.tabQueryResult.data = res.data.data;
-						me.tabPanels.tabQueryResult.cols = columns;
-						me.tabPanels.tabQueryResult.contentType = res.data.type;
-					}, 
+					)
+					
+				}
+			},
+			//获取该用户最近查询历史，并重新填充表格
+			getQueryHistory(){
+				var me = this;
+				//从后端获取查询历史
+				getAllQueryHistoryByUser().then(
 					function (res) {
-						me.$Message.info("请求后端失败！服务器不知道跑哪里玩儿去了....");
+						me.dataHistQuery = res.data;
+					},
+					function (res) {
+						me.$Message.warning("获取查询历史失败!");
 					}
 				)
-				
+			},
+			//轮询某个查询历史状态是否ok了
+			getQueryHistoryStatusById(queryId){
+				var me = this;
+				var params = {queryHistId : queryId};
+				getQueryStatusById(params).then(
+					function (res) {
+						if (res.status != 0 || res.data.status != 1) {
+							window.clearInterval(me.clockQueryHistory[queryId]);
+							//刷新一下查询历史界面
+							me.getQueryHistory();
+							
+							//最后切换焦点到结果页tab上
+							me.currActiveTabPanel = "tabQueryResult";
+						}
+					},
+					function (res) {
+						me.$Message.warning("查询任务状态失败! 查询语句Id: " + queryId);
+						window.clearInterval(me.clockQueryHistory[queryId]);
+					}
+				)
+			},
+			//导出csv文件
+			exportData () {
+				this.$refs.tableResult.exportCsv({
+					filename: 'The original data'
+				});
+            },
+			//查询历史表格里，点击查看结果
+			retrieveResultByQueryId(item) {
+				var me = this;
+				//向后端索取文件结果，如果没有了则提示重新执行query
+				var params = {queryHistId:item.id};
+				getHistoryResultById(params).then(
+					function (res) {
+						if (res.status == 0) {
+							var columns = new Array();
+							if (res.data.type == 'sql_query') {
+								if (res.data.data.result_cols != null) {
+									//如果结果集不为空，将后端传来的cols信息拼接成VUE Table的columns数组
+									if (res.data.data.result_cols.length >= 8) {
+										for (var index in res.data.data.result_cols) {
+											var colDict = {
+												title : res.data.data.result_cols[index], 
+												key :   res.data.data.result_cols[index],
+												width: 120
+											};
+											columns.push(colDict);
+										}
+									} else {
+										for (var index in res.data.data.result_cols) {
+											var colDict = {
+												title : res.data.data.result_cols[index], 
+												key :   res.data.data.result_cols[index]
+											};
+											columns.push(colDict);
+										}
+									}
+								} else {
+									//如果结果集为空啥都不用做
+								}
+								
+							}
+							
+							//设置标签页数据
+							me.tabPanels.tabQueryResult.status = res.status;
+							me.tabPanels.tabQueryResult.message = res.message;
+							me.tabPanels.tabQueryResult.data = res.data.data;
+							me.tabPanels.tabQueryResult.cols = columns;
+							me.tabPanels.tabQueryResult.contentType = res.data.type;
+							
+							me.currActiveTabPanel = "tabQueryResult";
+						} else {
+							me.$Message.warning(res.message);
+						}
+					},
+					function (res) {
+						me.$Message.error("查看结果失败！服务器不知道跑哪里玩儿去了....");
+					}
+				)
+			},
+			//点击查询历史单行重新填充sql_content输入框
+			refillSqlContent(row, index) {
+				this.sql_content = row.queryContent;
 			}
-			
-        }
+        },
+		components: {
+			Spin
+		}
     }
 </script>
