@@ -17,6 +17,12 @@ axios.interceptors.response.use((res) => {
         data = JSON.parse(data);
     }
 
+     // 未登录状态
+    if (code === 2000000500) {
+        window.location.href = 'login.html';
+        return;
+    }
+
     if (code === 0 || isNaN(code)) {
         return data;
     } else {
