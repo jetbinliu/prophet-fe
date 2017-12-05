@@ -18,11 +18,6 @@ export default new Router({
       name: 'hive_query',
       component: hive_query
     },
-	{
-      path: '/login',
-      name: 'login',
-      component: login
-    },
     {
       path: '/role',
       name: 'Role',
