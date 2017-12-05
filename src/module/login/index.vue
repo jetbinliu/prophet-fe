@@ -8,13 +8,12 @@
         
     </Modal>
 	
-	
 </template>
 <script>
     export default {
         data () {
             return {
-				modal1: false,
+				modal1: true,
                 formInline: {
                     user: '',
                     password: ''
