@@ -288,6 +288,12 @@
 									var columns = new Array();
 									if (res.data.type == 'sql_query' && res.status == 0) {
 										if (res.data.data.result_cols != null) {
+											columns.push({
+												title: '行号',
+												key: '',
+												type: 'index',
+												width: 80
+											});
 											//如果结果集不为空，将后端传来的cols信息拼接成VUE Table的columns数组
 											if (res.data.data.result_cols.length >= 8) {
 												for (var index in res.data.data.result_cols) {
@@ -383,6 +389,12 @@
 							var columns = new Array();
 							if (res.data.type == 'sql_query') {
 								if (res.data.data.result_cols != null) {
+									columns.push({
+										title: '行号',
+										key: '',
+										type: 'index',
+										width: 80
+									});
 									//如果结果集不为空，将后端传来的cols信息拼接成VUE Table的columns数组
 									if (res.data.data.result_cols.length >= 8) {
 										for (var index in res.data.data.result_cols) {

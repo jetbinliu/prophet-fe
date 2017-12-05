@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import Router from 'vue-router'
 import hive_query from '@/module/hive_query/index'
-import Home from '@/module/home/index'
+import login from '@/module/login/index'
 import Role from '@/module/role/index'
 
 Vue.use(Router)
@@ -18,10 +18,10 @@ export default new Router({
       name: 'hive_query',
       component: hive_query
     },
-    {
-      path: '/home',
-      name: 'Home',
-      component: Home
+	{
+      path: '/login',
+      name: 'login',
+      component: login
     },
     {
       path: '/role',
