@@ -127,10 +127,9 @@
             <Col :span="21">
 				<div class="layout-ceiling">
 					<div class="layout-ceiling-main v-center">
-						<span class="welcome-span">您好，test1用户</span>
-						<a href="#"><Icon type="ios-navigate"></Icon>&nbsp;个人配置</a> |
-						<a href="#"><Icon type="ios-analytics"></Icon>&nbsp;登录</a> |
-						<a href="#"><Icon type="ios-keypad"></Icon>&nbsp;退出</a> 
+						<span class="welcome-span">您好，{{currLoginedUser}}用户&nbsp;</span>
+						<Button size="small" shape="circle"><Icon type="gear-a"></Icon>&nbsp;配置</Button> |
+						<Button size="small" @click="logOut()"  shape="circle"><Icon type="arrow-right-a"></Icon>&nbsp;退出</Button> 
 
 					</div>
 				</div>
@@ -142,10 +141,17 @@
     </div>
 </template>
 <script>
+	import { getLoginedUser } from './module/login/request';
+	import { logout } from './module/login/request';
+
     export default {
+		mounted () { 
+			this.getCurrLoginedUser();
+			
+		},
 		data () {
             return {
-                
+                currLoginedUser:''
             }
         },
         created () {
@@ -153,7 +159,30 @@
         methods: {
             forward (url) {
                 this.$router.push(url);
-            }
+            },
+			getCurrLoginedUser() {
+				var me = this;
+				getLoginedUser({}).then(
+					function (res) {
+						if (res.status === 0) {
+							me.currLoginedUser = res.data;
+						}
+					},
+					function (res) {
+						me.$Message.warning("从后端session里获取当前登录用户信息失败!");
+					}
+				);
+			},
+			logOut() {
+				logout({}).then(
+					function (res) {
+						window.location.href = '/login.html';
+					},
+					function (res) {
+						window.location.href = '/login.html';
+					}
+				);
+			}
         }
     }
 </script>

@@ -17,8 +17,8 @@ axios.interceptors.response.use((res) => {
         data = JSON.parse(data);
     }
 
-     // 未登录状态
-    if (code === 2000000500) {
+     // 后端返回未登录状态，则强制跳转到登录页
+    if (res.data.status === 2 && res.data.message === 'unlogin') {
         window.location.href = 'login.html';
         return;
     }
