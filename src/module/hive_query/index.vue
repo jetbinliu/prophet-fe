@@ -24,10 +24,18 @@
                     <div style="margin: 10px 10px;">
                         <Input v-model="sql_content" type="textarea" :rows="6" 
 							placeholder="请输入要查询的SQL...表名请带上db名...查询大表尽量加上分区键和limit"></Input>
-                        <div style="margin-top: 10px; float:right;">
-                            <Button type="primary" @click="sendQuery">查询(S)</Button>&nbsp;&nbsp;
-                            <Button @click="clearQuery">清空</Button>
-							
+                        <div style="margin-top: 10px;">
+							<div style="float:left; display: inline;">
+								&nbsp;邮件通知：
+								<i-switch v-model="emailNotify">
+									<span slot="open">开</span>
+									<span slot="close">关</span>
+								</i-switch>
+							</div>
+							<div style="float:right; display: inline;">
+								<Button type="primary" @click="sendQuery">查询(S)</Button>&nbsp;&nbsp;
+								<Button @click="clearQuery">清空</Button>
+							</div>
                         </div>
                     </div>
                 </Row>
@@ -98,6 +106,7 @@
         data () {
             return {
 				sql_content: '',
+				emailNotify: false,
 				tabPanels: {
 					tabHistoryQuery: {
 						label:"历史查询", 
@@ -264,7 +273,7 @@
 					var queryHistoryId = -1;
 					
 					//不管查询是否成功，都保存一条查询历史
-					var queryHistoryParams = {queryContent : me.sql_content};
+					var queryHistoryParams = {queryContent : me.sql_content, emailNotify : me.emailNotify};
 					saveQueryHistory(queryHistoryParams).then(
 						function (res) {
 							//获取该条查询历史的id并保存，供后面ajax使用
@@ -282,7 +291,7 @@
 							me.$set(me.clockQueryHistory, queryHistoryId, int);
 							
 							//发送query和刚刚生成的id到后端, 等待hive执行并获取结果展现
-							var params = {queryContent : me.sql_content, queryHistId : queryHistoryId};
+							var params = {queryContent : me.sql_content, queryHistId : queryHistoryId, emailNotify : me.emailNotify};
 							sendHiveSqlQuery(params).then(
 								function (res) {
 									var columns = new Array();

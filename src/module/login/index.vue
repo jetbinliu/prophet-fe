@@ -34,7 +34,7 @@
 </style>
 <template>
 	<div>
-		<Row type="flex" style="margin-top:250px;">
+		<Row type="flex" style="margin-top:160px;">
             <Col :span="8">
 				
 			</Col>
@@ -45,10 +45,10 @@
 				<div class="login-form">
 					<Form ref="formLogin" :model="formLogin" :rules="ruleCustom" :label-width="80" >
 						<FormItem label="用户名" prop="username">
-							<Input type="text" v-model="formLogin.username"></Input>
+							<Input type="text" v-model="formLogin.username" @keyup.enter.native="handleSubmit()"></Input>
 						</FormItem>
 						<FormItem label="密码" prop="passwd">
-							<Input type="password" v-model="formLogin.passwd"></Input>
+							<Input type="password" v-model="formLogin.passwd" @keyup.enter.native="handleSubmit()"></Input>
 						</FormItem>
 						
 						<FormItem>
@@ -126,8 +126,10 @@
             },
             handleReset (name) {
                 this.$refs[name].resetFields();
-            }
-			
+            },
+			submit() {
+				this.$Message.info("aaaaaaaaaaas");
+			}
         }
     }
 </script>
