@@ -22,11 +22,11 @@
             <div class="layout-content-main">
                 <Row>
                     <div style="margin: 10px 10px;">
-                        <Input v-model="sql_content" type="textarea" :rows="6" 
+                        <Input v-model="sql_content" type="textarea" :rows="6" @keyup.native="alterS($event)"
 							placeholder="请输入要查询的SQL...表名请带上db名...查询大表尽量加上分区键和limit"></Input>
                         <div style="margin-top: 10px;">
 							<div style="float:left; display: inline;">
-								&nbsp;邮件通知：
+								&nbsp;运行完邮件通知我：
 								<i-switch v-model="emailNotify">
 									<span slot="open">开</span>
 									<span slot="close">关</span>
@@ -155,7 +155,7 @@
                                 <div>
 								{
 									item.status === 0 
-                                    ? <Button type="success" size="small" onClick={this.retrieveResultByQueryId.bind(this, item)}>查看结果</Button>
+                                    ? <Button size="small" onClick={this.retrieveResultByQueryId.bind(this, item)}>查看结果</Button>
                                     : ''
 								}
 								{
@@ -170,7 +170,7 @@
 								}
 								{
 									item.status === 3
-                                    ? <Button type="error" size="small" onClick={this.retrieveResultByQueryId.bind(this, item)}>查看错误</Button>
+                                    ? <Button type="warning" size="small" onClick={this.retrieveResultByQueryId.bind(this, item)}>查看错误</Button>
                                     : ''
 								}
 								</div>
@@ -449,6 +449,12 @@
 			//点击查询历史单行重新填充sql_content输入框
 			refillSqlContent(row, index) {
 				this.sql_content = row.queryContent;
+			},
+			//Alt+S快捷键提交查询，仅限于SQL语句输入框获取焦点时
+			alterS(event) {
+				if (event.altKey && event.keyCode == 83) {
+					this.sendQuery();
+				}
 			}
         },
 		components: {

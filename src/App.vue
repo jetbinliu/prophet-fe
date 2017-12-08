@@ -54,7 +54,7 @@
         border-radius: 3px;
         margin: 15px auto;
         text-align: center;
-        line-height: 40px;
+        line-height: 30px;
     }
 	.layout-ceiling{
         background: #464c5b;
@@ -85,7 +85,7 @@
             <Col :span="3" class="layout-menu-left">
                 <Menu theme="dark" width="auto" :open-names="['1']">
                     <div class="layout-logo-left">
-						<Avatar icon="person" size="small" />
+						
 						<span><font color="white"><B>PROPHET</B></font></span>
 					</div>
                     <Submenu name="1">
@@ -127,10 +127,12 @@
             <Col :span="21">
 				<div class="layout-ceiling">
 					<div class="layout-ceiling-main v-center">
-						<span class="welcome-span">您好，{{currLoginedUser}}用户&nbsp;</span>
-						<Button size="small" shape="circle"><Icon type="gear-a"></Icon>&nbsp;配置</Button> |
-						<Button size="small" @click="logOut()"  shape="circle"><Icon type="arrow-right-a"></Icon>&nbsp;退出</Button> 
-
+						
+						<span class="welcome-span">您好，{{currLoginedUser}}&nbsp;</span>
+						<ButtonGroup size="small" shape="circle">
+							<Button type="ghost"><font color="white"><Icon type="gear-a"></Icon>&nbsp;配置</font></Button>
+							<Button type="ghost"><font color="white" @click="logOut()"><Icon type="arrow-right-a"></Icon>&nbsp;退出</font></Button>
+						</ButtonGroup>
 					</div>
 				</div>
                 <div class="layout-content">
