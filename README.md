@@ -21,3 +21,11 @@ npm run build
 # 生产：顺便查看bundle analyzer report
 npm run build --report
 ```
+
+## 如何增加新的页面
+
+> 在prophet-fe根目录下增加新的页面new1.html
+
+> 在src目录下参照login.js增加新的new1.js，在src/module目录下参照login增加新的模块new1
+
+> 在build/webpack.dev.conf.js里参照login.html增加新的 new HtmlWebpackPlugin块
