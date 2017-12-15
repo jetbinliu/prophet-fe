@@ -23,7 +23,7 @@
                 <Row>
                     <div style="margin: 10px 10px;">
                         <Input v-model="sql_content" type="textarea" :rows="6" @keyup.native="alterS($event)"
-							placeholder="请输入要查询的SQL...表名请带上db名...查询大表尽量加上分区键和limit"></Input>
+							placeholder="请输入要查询的SQL...表名请带上db名，不带db名默认查询default库...查询大表尽量加上分区键和limit..."></Input>
                         <div style="margin-top: 10px;">
 							<div style="float:left; display: inline;">
 								&nbsp;运行完邮件通知我：
@@ -65,12 +65,16 @@
 										
 									</Table>
 									
-									<Alert v-if="tabPanels.tabQueryResult.contentType == 'sql_query' && tabPanels.tabQueryResult.status != 0" type="error" show-icon>
+									<Alert v-if="tabPanels.tabQueryResult.status != 0" type="error" show-icon>
 										出错啦!
 										<span slot="desc">
 											{{tabPanels.tabQueryResult.message}}
 										</span>
 									</Alert>
+									<Table v-if="tabPanels.tabQueryResult.status == 3" size="small" 
+										stripe :columns="tabPanels.tabQueryResult.noPrivTablesCols" :data="tabPanels.tabQueryResult.noPrivTablesData" >
+										
+									</Table>
 								</div>
                                 
                             </TabPane>
@@ -117,11 +121,26 @@
 					tabQueryResult: {
 						label:"查询结果", 
 						display:true,
-						status:-1,
+						status:0,
 						message:"",
 						data:{},
 						cols:[],
-						contentType:""
+						contentType:"",
+						noPrivTablesData:[],
+						noPrivTablesCols:[
+							{
+								title: 'tableId',
+								key: 'table_id'
+							},
+							{
+								title: '库名',
+								key: 'table_schema'
+							},
+							{
+								title: '表名',
+								key: 'table_name'
+							}
+						]
 					}
 				},
 				currActiveTabPanel: "",
@@ -295,7 +314,7 @@
 							sendHiveSqlQuery(params).then(
 								function (res) {
 									var columns = new Array();
-									if (res.data.type == 'sql_query' && res.status == 0) {
+									if (res.data != null && "type" in res.data && res.data.type == 'sql_query' && res.status == 0) {
 										if (res.data.data.result_cols != null) {
 											columns.push({
 												title: '行号',
@@ -325,14 +344,20 @@
 										} else {
 											//如果结果集为空啥都不用做
 										}
+									} else if (res.status == 3 && res.data.length != 0) {
+										//后端数据权限校验没通过
+										me.tabPanels.tabQueryResult.noPrivTablesData = res.data;
 									}
 									
 									//设置标签页数据
 									me.tabPanels.tabQueryResult.status = res.status;
 									me.tabPanels.tabQueryResult.message = res.message;
-									me.tabPanels.tabQueryResult.data = res.data.data;
+									if (res.data != null && "data" in res.data && "type" in res.data) {
+										me.tabPanels.tabQueryResult.data = res.data.data;
+										me.tabPanels.tabQueryResult.contentType = res.data.type;
+									}
+									
 									me.tabPanels.tabQueryResult.cols = columns;
-									me.tabPanels.tabQueryResult.contentType = res.data.type;
 
 								}, 
 								function (res) {

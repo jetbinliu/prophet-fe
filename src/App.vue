@@ -95,24 +95,26 @@
                         </template>
                         <MenuItem name="1-1" @click.native="forward('hive_query')">
 							<Icon type="ios-list-outline"></Icon>
-							<span class="layout-text">发起hive查询</span>
+							<span class="layout-text">查询hive</span>
 						</MenuItem>
-                        <MenuItem name="1-2" @click.native="forward('hive_create_table')">
-							<Icon type="ios-pricetag"></Icon>
-							<span class="layout-text">创建hive表</span>
-						</MenuItem>
-                        <MenuItem name="1-3" @click.native="forward('login')">
+                        <MenuItem name="1-2" @click.native="forward('all_secret_tables')">
 							<Icon type="ios-chatboxes-outline"></Icon>
-							<span class="layout-text">我的hive表</span>
+							<span class="layout-text">所有机密表</span>
 						</MenuItem>
                     </Submenu>
                     <Submenu name="2">
                         <template slot="title">
                             <Icon type="ios-analytics"></Icon>
-                            hive报表
+                            数据安全
                         </template>
-                        <MenuItem name="3-1"><Icon type="ios-analytics"></Icon>Option 1</MenuItem>
-                        <MenuItem name="3-2"><Icon type="ios-analytics"></Icon>Option 2</MenuItem>
+						<MenuItem name="2-1">
+							<Icon type="ios-chatboxes-outline"></Icon>
+							<span class="layout-text">配置机密表</span>
+						</MenuItem>
+						<MenuItem name="2-2">
+							<Icon type="ios-chatboxes-outline"></Icon>
+							<span class="layout-text">数据权限</span>
+						</MenuItem>
                     </Submenu>
                     <Submenu name="3">
                         <template slot="title">
@@ -130,7 +132,7 @@
 						
 						<span class="welcome-span">您好，{{currLoginedUser}}&nbsp;</span>
 						<ButtonGroup size="small" shape="circle">
-							<Button type="ghost"><font color="white"><Icon type="gear-a"></Icon>&nbsp;配置</font></Button>
+							<Button type="ghost"><font color="white"><Icon type="gear-a"></Icon>&nbsp;个人配置</font></Button>
 							<Button type="ghost"><font color="white" @click="logOut()"><Icon type="arrow-right-a"></Icon>&nbsp;退出</font></Button>
 						</ButtonGroup>
 					</div>
@@ -153,7 +155,8 @@
 		},
 		data () {
             return {
-                currLoginedUser:''
+                currLoginedUser:'',
+				aaa:1
             }
         },
         created () {
