@@ -3,6 +3,7 @@
 		margin-right: 30px;
 		margin-top: 10px;
 		margin-left: 30px;
+		margin-bottom: 10px;
 	}
 </style>
 <template>

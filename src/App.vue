@@ -41,6 +41,7 @@
     }
     .layout-menu-left{
         background: #464c5b;
+		height: 1200px;
     }
     .layout-header{
         height: 50px;
@@ -55,6 +56,7 @@
         margin: 15px auto;
         text-align: center;
         line-height: 30px;
+		font-family: "Helvetica Neue",Helvetica,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","微软雅黑",Arial,sans-serif;
     }
 	.layout-ceiling{
         background: #464c5b;
@@ -83,57 +85,68 @@
     <div class="layout" >
         <Row type="flex">
             <Col :span="3" class="layout-menu-left">
-                <Menu theme="dark" width="auto" :open-names="['1']">
+                <Menu theme="dark" width="auto" :open-names="subMenuOpenKeys">
                     <div class="layout-logo-left">
 						
 						<span><font color="white"><B>PROPHET</B></font></span>
 					</div>
-                    <Submenu name="1">
+                    <Submenu name="hive_operation" key="hive_operation">
                         <template slot="title">
                             <Icon type="ios-keypad"></Icon>
                             <span class="layout-text">hive操作</span>
                         </template>
-                        <MenuItem name="1-1" @click.native="forward('hive_query')">
+                        <MenuItem name="hive_query" @click.native="forward('hive_query')">
 							<Icon type="ios-list-outline"></Icon>
 							<span class="layout-text">查询hive</span>
 						</MenuItem>
-                        <MenuItem name="1-2" @click.native="forward('all_secret_tables')">
+                        <MenuItem name="all_secret_tables" @click.native="forward('all_secret_tables')">
 							<Icon type="ios-chatboxes-outline"></Icon>
 							<span class="layout-text">所有机密表</span>
 						</MenuItem>
                     </Submenu>
-                    <Submenu name="2">
+                    <Submenu name="system_management" key="system_management" v-if="currLoginedUserInfo.isAdmin == 1">
                         <template slot="title">
-                            <Icon type="ios-analytics"></Icon>
-                            数据安全
+                            <Icon type="unlocked"></Icon>
+                            系统管理
                         </template>
-						<MenuItem name="2-1">
-							<Icon type="ios-chatboxes-outline"></Icon>
+						<MenuItem name="config_secret_tables" @click.native="forward('config_secret_tables')">
+							<Icon type="plus-circled"></Icon>
 							<span class="layout-text">配置机密表</span>
 						</MenuItem>
-						<MenuItem name="2-2">
-							<Icon type="ios-chatboxes-outline"></Icon>
+						<MenuItem name="user_secret_privs" @click.native="forward('user_secret_privs')">
+							<Icon type="ios-settings-strong"></Icon>
 							<span class="layout-text">数据权限</span>
 						</MenuItem>
+						<MenuItem name="user_config" @click.native="forward('user_config')" 
+							v-if="currLoginedUserInfo.isAdmin == 1 && currLoginedUserInfo.userAuthSystemType == 'prophet'">
+							<Icon type="person-stalker"></Icon>
+							<span class="layout-text">用户管理</span>
+						</MenuItem>
                     </Submenu>
-                    <Submenu name="3">
+                    <!-- <Submenu name="hive_task" key="hive_task">
                         <template slot="title">
-                            <Icon type="ios-analytics"></Icon>
-                            定时任务
+                            <Icon type="clock"></Icon>
+                            hive任务
                         </template>
-                        <MenuItem name="3-1"><Icon type="ios-analytics"></Icon>Option 1</MenuItem>
-                        <MenuItem name="3-2"><Icon type="ios-analytics"></Icon>Option 2</MenuItem>
-                    </Submenu>
+                        <MenuItem name="sqoop_task" @click.native="forward('sqoop_task')">
+							<Icon type="ios-shuffle-strong"></Icon>
+							<span class="layout-text">sqoop任务</span>
+						</MenuItem>
+						<MenuItem name="scheduled_task" @click.native="forward('scheduled_task')">
+							<Icon type="ios-compose-outline"></Icon>
+							<span class="layout-text">定时任务</span>
+						</MenuItem>
+                    </Submenu>-->
                 </Menu>
             </Col>
             <Col :span="21">
 				<div class="layout-ceiling">
 					<div class="layout-ceiling-main v-center">
 						
-						<span class="welcome-span">您好，{{currLoginedUser}}&nbsp;</span>
+						<span class="welcome-span">您好，{{currLoginedUserInfo.loginedUser}}&nbsp;</span>
 						<ButtonGroup size="small" shape="circle">
-							<Button type="ghost"><font color="white"><Icon type="gear-a"></Icon>&nbsp;个人配置</font></Button>
-							<Button type="ghost"><font color="white" @click="logOut()"><Icon type="arrow-right-a"></Icon>&nbsp;退出</font></Button>
+							<Button type="ghost" @click.native="forward('personal_config')"><font color="white"><Icon type="gear-a"></Icon>&nbsp;个人配置</font></Button>
+							<Button type="ghost" @click="logOut()"><font color="white"><Icon type="arrow-right-a"></Icon>&nbsp;退出</font></Button>
 						</ButtonGroup>
 					</div>
 				</div>
@@ -155,8 +168,12 @@
 		},
 		data () {
             return {
-                currLoginedUser:'',
-				aaa:1
+                currLoginedUserInfo:{
+					loginedUser:'',
+					isAdmin:-1,
+					userAuthSystemType:''
+				},
+				subMenuOpenKeys:['hive_operation','system_management','hive_task']
             }
         },
         created () {
@@ -170,7 +187,9 @@
 				getLoginedUser({}).then(
 					function (res) {
 						if (res.status === 0) {
-							me.currLoginedUser = res.data;
+							me.currLoginedUserInfo.loginedUser = res.data.loginedUser;
+							me.currLoginedUserInfo.isAdmin = res.data.isAdmin;
+							me.currLoginedUserInfo.userAuthSystemType = res.data.userAuthSystemType;
 						}
 					},
 					function (res) {
@@ -187,6 +206,9 @@
 						window.location.href = '/login.html';
 					}
 				);
+			},
+			personalConfig() {
+				
 			}
         }
     }

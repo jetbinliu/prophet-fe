@@ -126,10 +126,7 @@
             },
             handleReset (name) {
                 this.$refs[name].resetFields();
-            },
-			submit() {
-				this.$Message.info("aaaaaaaaaaas");
-			}
+            }
         }
     }
 </script>
