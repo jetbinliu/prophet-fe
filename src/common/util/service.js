@@ -3,6 +3,9 @@
 
 import axios from 'axios';
 
+//控制ajax请求超时时间，单位毫秒
+axios.defaults.timeout =  2592000000;
+
 let querystring = require('querystring');
 let showErrTip = true;
 
@@ -71,7 +74,7 @@ export function get (url, data = {}) {
  */
 export function post (url, data = {}, hideErr) {
     showErrTip = !hideErr;
-    return axios.post(url, querystring.stringify(data));
+    return axios.post(url, querystring.stringify(data), {timeout:2592000000});
 }
 
 export function postWithJson (url, data = {}, hideErr) {

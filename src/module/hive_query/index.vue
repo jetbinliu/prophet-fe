@@ -43,28 +43,32 @@
                     <div style="margin: 10px 10px;">
                         <Tabs type="card" @on-tab-remove="handleTabRemove" v-model="currActiveTabPanel">
                             <TabPane label="历史查询" v-if="tabPanels.tabHistoryQuery.display" name="tabHistoryQuery">
-                                <!-- <Select v-model="model1"  clearable placeholder="请选择城市" @on-change="refresh" style="width:200px">
-                                     <Option v-for="item in cityList" value="item.value" :key="item.value">{{ item.label }}</Option>
-                                </Select> -->
                                 <Table size="small" stripe :columns="colHistQuery" :data="dataHistQuery" @on-row-click="refillSqlContent">
 									
                                 </Table>
                             </TabPane>
                             <TabPane label="查询结果" v-if="tabPanels.tabQueryResult.display" name="tabQueryResult">
 								<div>
-									<p>
-									<Button v-if="tabPanels.tabQueryResult.contentType == 'sql_query' && tabPanels.tabQueryResult.status == 0" type="primary" 
-										size="large" @click="exportData()"><Icon type="ios-download-outline"></Icon> 导出成CSV文件
-									</Button>
-									</p>
+									<Row>
+										<Button style="float:left;" v-if="tabPanels.tabQueryResult.contentType == 'sql_query' && tabPanels.tabQueryResult.status == 0" 	
+											type="primary" size="large" @click="exportData()">
+											<Icon type="ios-download-outline"></Icon> 导出成CSV文件
+										</Button>
+										<Page style="float:right;" :page-size="20" :total="tabPanels.tabQueryResult.resultSize" show-elevator 
+											v-if="tabPanels.tabQueryResult.contentType == 'sql_query' && 
+												tabPanels.tabQueryResult.status == 0 &&
+												tabPanels.tabQueryResult.resultSize != 0
+												" @on-change="retrieveResultByQueryId">
+										</Page>
+									</Row>
 									<br/>
+									<Row>
 									<Table v-if="tabPanels.tabQueryResult.contentType == 'sql_query' && tabPanels.tabQueryResult.status == 0" size="small" 
 										stripe :columns="tabPanels.tabQueryResult.cols" :data="tabPanels.tabQueryResult.data.result_data" 
 										no-data-text="SQL查询返回的结果集为空. 换个查询条件试试？" ref="tableResult"
 									>
 										
 									</Table>
-									
 									<Alert v-if="tabPanels.tabQueryResult.status != 0" type="error" show-icon>
 										出错啦!
 										<span slot="desc">
@@ -75,6 +79,7 @@
 										stripe :columns="tabPanels.tabQueryResult.noPrivTablesCols" :data="tabPanels.tabQueryResult.noPrivTablesData" >
 										
 									</Table>
+									</Row>
 								</div>
                                 
                             </TabPane>
@@ -123,6 +128,7 @@
 						display:true,
 						status:0,
 						message:"",
+						queryHistId:0,
 						data:{},
 						cols:[],
 						contentType:"",
@@ -140,7 +146,8 @@
 								title: '表名',
 								key: 'table_name'
 							}
-						]
+						],
+						resultSize:0
 					}
 				},
 				currActiveTabPanel: "",
@@ -209,7 +216,6 @@
 			this.currActiveTabPanel = "tabHistoryQuery";
             this.getMetaStoreDbTables();
 			this.getQueryHistory();
-			
         },
         methods: {
 			//获取metastore里所有库表信息并展现
@@ -297,6 +303,7 @@
 						function (res) {
 							//获取该条查询历史的id并保存，供后面ajax使用
 							queryHistoryId = res.data;
+							me.tabPanels.tabQueryResult.queryHistId = queryHistoryId;
 							
 							//保存历史成功，刷新当前历史查询页面
 							me.getQueryHistory();
@@ -314,8 +321,11 @@
 							sendHiveSqlQuery(params).then(
 								function (res) {
 									var columns = new Array();
+									//如果执行SQL成功
 									if (res.data != null && "type" in res.data && res.data.type == 'sql_query' && res.status == 0) {
+										me.tabPanels.tabQueryResult.resultSize = res.data.size;
 										if (res.data.data.result_cols != null) {
+										
 											columns.push({
 												title: '行号',
 												key: '',
@@ -408,21 +418,31 @@
 			},
 			//导出csv文件
 			exportData () {
-				this.$refs.tableResult.exportCsv({
-					filename: 'The original data'
-				});
+				var me = this;
+				var params = {queryHistId:me.tabPanels.tabQueryResult.queryHistId};
+				window.location.href="/hive_query/get_csv.json?queryHistId=" + me.tabPanels.tabQueryResult.queryHistId;
             },
-			//查询历史表格里，点击查看结果
+			//给2个地方用：1.查询历史表格里，点击查看结果，此时item为一行object类型  2.分页查询，此时item为页码number类型
 			retrieveResultByQueryId(item) {
 				var me = this;
 				//向后端索取文件结果，如果没有了则提示重新执行query
-				var params = {queryHistId:item.id};
+				var params = {};
+				if (typeof item == 'object') {
+					params = {queryHistId:item.id, pageNo:1};
+					me.tabPanels.tabQueryResult.queryHistId = item.id;
+				} else if (typeof item == 'number') {
+					params = {queryHistId:me.tabPanels.tabQueryResult.queryHistId, pageNo:item};
+				}
+				
 				getHistoryResultById(params).then(
 					function (res) {
 						if (res.status == 0) {
 							var columns = new Array();
 							if (res.data.type == 'sql_query') {
+								me.tabPanels.tabQueryResult.resultSize = res.data.size;
+								
 								if (res.data.data.result_cols != null) {
+									
 									columns.push({
 										title: '行号',
 										key: '',
@@ -480,6 +500,10 @@
 				if (event.altKey && event.keyCode == 83) {
 					this.sendQuery();
 				}
+			},
+			resultPaging(pageNo) {
+				this.$Message.info(pageNo+"==================================");
+				console.log(pageNo);
 			}
         },
 		components: {

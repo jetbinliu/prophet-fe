@@ -62,6 +62,8 @@
 									description: res.data[index].table_schema + '.' + res.data[index].table_name
 								});
 							}
+						} else {
+							me.$Message.error(res.message);
 						}
 					},
 					function (res) {
