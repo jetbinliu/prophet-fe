@@ -145,7 +145,7 @@
 						
 						<span class="welcome-span">您好，{{currLoginedUserInfo.loginedUser}}&nbsp;</span>
 						<ButtonGroup size="small" shape="circle">
-							<Button type="ghost" @click.native="forward('personal_config')"><font color="white"><Icon type="gear-a"></Icon>&nbsp;个人配置</font></Button>
+							<Button type="ghost" ><font color="white"><Icon type="gear-a"></Icon>&nbsp;个人配置</font></Button>
 							<Button type="ghost" @click="logOut()"><font color="white"><Icon type="arrow-right-a"></Icon>&nbsp;退出</font></Button>
 						</ButtonGroup>
 					</div>

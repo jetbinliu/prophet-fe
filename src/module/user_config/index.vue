@@ -51,6 +51,7 @@
 	
 	import { getAllProphetUsersAjax } from './request';
 	import { addProphetUserAjax } from './request';
+	import { deleteUserByIdAjax } from './request';
 	
     export default {
         data () {
@@ -94,7 +95,7 @@
                             var item = params.row;	//item是这一行的数据
                             return (
                                 <div>
-                                    <Button size="small" >删除</Button>
+                                    <Button size="small" onClick={this.deleteUserById.bind(this, item)}>删除</Button>
 								</div>
 							);
                         }
@@ -176,7 +177,23 @@
             },
             handleReset (name) {
                 this.$refs[name].resetFields();
-            }
+            },
+			deleteUserById(item) {
+				var me = this;
+				deleteUserByIdAjax({userId: item.id}).then(
+					function(res) {
+						if (res.status == 0) {
+							me.$Message.success("删除用户成功!");
+							me.getAllProphetUsers();
+						} else {
+							me.$Message.error(res.message);
+						}
+					},
+					function(res){
+						me.$Message.error("删除用户失败!");
+					}
+				)
+			}
         }
     }
 </script>

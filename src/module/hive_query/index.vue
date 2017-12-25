@@ -13,7 +13,8 @@
                         <Icon type="soup-can-outline"></Icon>
                             {{dbName}}
                     </template>
-                    <MenuItem v-for="tableLine in tableValue" :key="tableLine.TBL_ID" :name="dbName + '.' + tableLine.TBL_NAME" >{{tableLine.TBL_NAME}}
+                    <MenuItem v-for="tableLine in tableValue" :key="tableLine.TBL_ID" :name="dbName + '.' + tableLine.TBL_NAME"  style="height:37px; ">
+						{{tableLine.TBL_NAME}}
 					</MenuItem>
                 </Submenu>
             </Menu>
@@ -50,32 +51,33 @@
                             <TabPane label="查询结果" v-if="tabPanels.tabQueryResult.display" name="tabQueryResult">
 								<div>
 									<Row>
-										<Button style="float:left;" v-if="tabPanels.tabQueryResult.contentType == 'sql_query' && tabPanels.tabQueryResult.status == 0" 	
+										<Button style="float:left;" v-if="tabPanels.tabQueryResult.contentType == 'sql_query' && tabPanels.tabQueryResult.ajaxStatus == 0 && tabPanels.tabQueryResult.taskStatus == 0" 	
 											type="primary" size="large" @click="exportData()">
-											<Icon type="ios-download-outline"></Icon> 导出成CSV文件
+											<Icon type="ios-download-outline"></Icon> 导出成CSV文件&nbsp;(id:{{tabPanels.tabQueryResult.queryHistId}})
 										</Button>
 										<Page style="float:right;" :page-size="20" :total="tabPanels.tabQueryResult.resultSize" show-elevator 
 											v-if="tabPanels.tabQueryResult.contentType == 'sql_query' && 
-												tabPanels.tabQueryResult.status == 0 &&
+												tabPanels.tabQueryResult.ajaxStatus == 0 && 
+												tabPanels.tabQueryResult.taskStatus == 0 &&
 												tabPanels.tabQueryResult.resultSize != 0
 												" @on-change="retrieveResultByQueryId">
 										</Page>
 									</Row>
 									<br/>
 									<Row>
-									<Table v-if="tabPanels.tabQueryResult.contentType == 'sql_query' && tabPanels.tabQueryResult.status == 0" size="small" 
+									<Table v-if="tabPanels.tabQueryResult.contentType == 'sql_query' && tabPanels.tabQueryResult.ajaxStatus == 0 && tabPanels.tabQueryResult.taskStatus == 0" size="small" 
 										stripe :columns="tabPanels.tabQueryResult.cols" :data="tabPanels.tabQueryResult.data.result_data" 
 										no-data-text="SQL查询返回的结果集为空. 换个查询条件试试？" ref="tableResult"
 									>
 										
 									</Table>
-									<Alert v-if="tabPanels.tabQueryResult.status != 0" type="error" show-icon>
+									<Alert v-if="tabPanels.tabQueryResult.ajaxStatus != 0 || tabPanels.tabQueryResult.taskStatus != 0" type="error" show-icon>
 										出错啦!
 										<span slot="desc">
 											{{tabPanels.tabQueryResult.message}}
 										</span>
 									</Alert>
-									<Table v-if="tabPanels.tabQueryResult.status == 3" size="small" 
+									<Table v-if="tabPanels.tabQueryResult.ajaxStatus == 3" size="small" 
 										stripe :columns="tabPanels.tabQueryResult.noPrivTablesCols" :data="tabPanels.tabQueryResult.noPrivTablesData" >
 										
 									</Table>
@@ -107,6 +109,7 @@
 	import { getAllQueryHistoryByUser } from './request';
 	import { getQueryStatusById } from './request';
 	import { getHistoryResultById } from './request';
+	import { cancelTaskByIdAjax } from './request';
 	
 	import Spin from 'iview/src/components/spin/spin';
 	import Button from 'iview/src/components/button/button';
@@ -126,7 +129,8 @@
 					tabQueryResult: {
 						label:"查询结果", 
 						display:true,
-						status:0,
+						ajaxStatus:0,	//ajax接口返回的status	
+						taskStatus:0,	//以数据库里该查询的状态为准
 						message:"",
 						queryHistId:0,
 						data:{},
@@ -175,6 +179,7 @@
 					{
                         title: '动作',
                         key: 'action',
+						width: 200,
 						render: (h, params) => {
 							var item = params.row;	//item是这一行的数据
                             return (
@@ -186,17 +191,24 @@
 								}
 								{
 									item.status === 1
-                                    ? <Button type="info" size="small" loading>运行中...</Button>
+                                    ? <div style="display:inline-block">
+										<Button type="info" size="small" loading>
+											运行中
+										</Button>&nbsp;
+										<Button type="info" size="small" onClick={this.cancelTaskByQueryId.bind(this, item)} >
+											取消任务
+										</Button>
+									  </div>
                                     : ''
 								}
 								{
 									item.status === 2
-                                    ? <Button type="info" size="small" onClick={this.retrieveResultByQueryId.bind(this, item)}>重新运行</Button>
+                                    ? <Button type="warning" size="small" disabled>已经取消</Button>
                                     : ''
 								}
 								{
 									item.status === 3
-                                    ? <Button type="warning" size="small" onClick={this.retrieveResultByQueryId.bind(this, item)}>查看错误</Button>
+                                    ? <Button type="warning" size="small" onClick={this.retrieveErrorByQueryId.bind(this, item)}>查看错误</Button>
                                     : ''
 								}
 								</div>
@@ -292,7 +304,6 @@
 				if (me.sql_content == '' || me.sql_content == null || me.sql_content == undefined) {
 					me.$Message.error("SQL语句不能为空, 请输入SQL语句内容后提交!");
 				} else {
-					me.$Message.info("SQL已经成功提交，请耐心等待结果!");
 					
 					//初始化一个变量保存数据库返回的id
 					var queryHistoryId = -1;
@@ -309,69 +320,46 @@
 							me.getQueryHistory();
 							me.currActiveTabPanel = "tabHistoryQuery";
 							
-							//然后开始定时轮询后端是否执行完毕
-							var int = setInterval(function(){
-								me.getQueryHistoryStatusById(queryHistoryId)
-							}, 3000);
-							//将指针保存到全局对象里，方便后续clearInterval
-							me.$set(me.clockQueryHistory, queryHistoryId, int);
 							
-							//发送query和刚刚生成的id到后端, 等待hive执行并获取结果展现
+							//发送query和刚刚生成的id到后端
 							var params = {queryContent : me.sql_content, queryHistId : queryHistoryId, emailNotify : me.emailNotify};
 							sendHiveSqlQuery(params).then(
 								function (res) {
-									var columns = new Array();
-									//如果执行SQL成功
-									if (res.data != null && "type" in res.data && res.data.type == 'sql_query' && res.status == 0) {
-										me.tabPanels.tabQueryResult.resultSize = res.data.size;
-										if (res.data.data.result_cols != null) {
-										
-											columns.push({
-												title: '行号',
-												key: '',
-												type: 'index',
-												width: 80
-											});
-											//如果结果集不为空，将后端传来的cols信息拼接成VUE Table的columns数组
-											if (res.data.data.result_cols.length >= 8) {
-												for (var index in res.data.data.result_cols) {
-													var colDict = {
-														title : res.data.data.result_cols[index], 
-														key :   res.data.data.result_cols[index],
-														width: 120
-													};
-													columns.push(colDict);
-												}
-											} else {
-												for (var index in res.data.data.result_cols) {
-													var colDict = {
-														title : res.data.data.result_cols[index], 
-														key :   res.data.data.result_cols[index]
-													};
-													columns.push(colDict);
-												}
-											}
-										} else {
-											//如果结果集为空啥都不用做
-										}
-									} else if (res.status == 3 && res.data.length != 0) {
-										//后端数据权限校验没通过
-										me.tabPanels.tabQueryResult.noPrivTablesData = res.data;
-									}
-									
 									//设置标签页数据
-									me.tabPanels.tabQueryResult.status = res.status;
+									me.tabPanels.tabQueryResult.ajaxStatus = res.status;
 									me.tabPanels.tabQueryResult.message = res.message;
 									if (res.data != null && "data" in res.data && "type" in res.data) {
 										me.tabPanels.tabQueryResult.data = res.data.data;
 										me.tabPanels.tabQueryResult.contentType = res.data.type;
 									}
 									
-									me.tabPanels.tabQueryResult.cols = columns;
-
+									//如果成功
+									if (res.status == 0) {
+										me.$Message.info("SQL已经成功提交，请耐心等待结果!");
+										
+										//然后开始定时轮询后端是否执行完毕
+										var int = setInterval(function(){
+											me.getQueryHistoryStatusById(queryHistoryId)
+										}, 3000);
+										//将指针保存到全局对象里，方便后续clearInterval
+										me.$set(me.clockQueryHistory, queryHistoryId, int);
+									} else if (res.status == 3 && res.data.length != 0) {
+										//后端数据权限校验没通过
+										me.tabPanels.tabQueryResult.noPrivTablesData = res.data;
+										
+										//刷新一下查询历史界面
+										me.getQueryHistory();
+										//最后切换焦点到结果页tab上
+										me.currActiveTabPanel = "tabQueryResult";
+									} else {
+										//刷新一下查询历史界面
+										me.getQueryHistory();
+										//最后切换焦点到结果页tab上
+										me.currActiveTabPanel = "tabQueryResult";
+									}
 								}, 
 								function (res) {
-									me.$Message.error("请求后端失败！服务器不知道跑哪里玩儿去了....");
+									me.$Message.error("提交SQL失败！服务器不知道跑哪里玩儿去了....");
 								}
 							)
 						},
@@ -395,19 +383,52 @@
 					}
 				)
 			},
-			//轮询某个查询历史状态是否ok了
+			//轮询某个查询历史状态是否ok了,如果ok则拉取查询结果
 			getQueryHistoryStatusById(queryId){
 				var me = this;
 				var params = {queryHistId : queryId};
 				getQueryStatusById(params).then(
 					function (res) {
-						if (res.status != 0 || res.data.status != 1) {
-							window.clearInterval(me.clockQueryHistory[queryId]);
-							//刷新一下查询历史界面
-							me.getQueryHistory();
-							
-							//最后切换焦点到结果页tab上
-							me.currActiveTabPanel = "tabQueryResult";
+						if (res.status == 0) {
+							if (res.data.status == 0) {
+								//如果该任务执行完毕，则此时需要更新面板
+								window.clearInterval(me.clockQueryHistory[queryId]);
+								
+								//刷新一下查询历史界面
+								me.getQueryHistory();
+								
+								//设置标签页数据
+								me.tabPanels.tabQueryResult.ajaxStatus = res.status;
+								me.tabPanels.tabQueryResult.taskStatus = res.data.status;
+								me.tabPanels.tabQueryResult.message = res.data.message;
+								
+								//执行成功则拉取查询结果
+								if (res.data.status == 0) {
+									me.retrieveResultByQueryId({id: queryId});
+								}
+								
+								//最后切换焦点到结果页tab上
+								//me.currActiveTabPanel = "tabQueryResult";
+								
+							} else if (res.data.status == 1) {
+								//任务没执行完，继续轮询
+							} else {
+								//刷新一下查询历史界面
+								me.getQueryHistory();
+								
+								//任务有hive后端、写磁盘、发邮件等异常或报错，并非权限验证等错误
+								window.clearInterval(me.clockQueryHistory[queryId]);
+								
+								//设置标签页数据
+								me.tabPanels.tabQueryResult.ajaxStatus = res.status;
+								me.tabPanels.tabQueryResult.taskStatus = res.data.status;
+								me.tabPanels.tabQueryResult.message = res.data.message;
+								
+								//最后切换焦点到结果页tab上
+								me.currActiveTabPanel = "tabQueryResult";
+							}
+						} else {
+							me.$Message.error("查询任务状态失败! 查询语句Id: " + queryId);
 						}
 					},
 					function (res) {
@@ -416,12 +437,7 @@
 					}
 				)
 			},
-			//导出csv文件
-			exportData () {
-				var me = this;
-				var params = {queryHistId:me.tabPanels.tabQueryResult.queryHistId};
-				window.location.href="/hive_query/get_csv.json?queryHistId=" + me.tabPanels.tabQueryResult.queryHistId;
-            },
+			
 			//给2个地方用：1.查询历史表格里，点击查看结果，此时item为一行object类型  2.分页查询，此时item为页码number类型
 			retrieveResultByQueryId(item) {
 				var me = this;
@@ -440,34 +456,27 @@
 							var columns = new Array();
 							if (res.data.type == 'sql_query') {
 								me.tabPanels.tabQueryResult.resultSize = res.data.size;
+								me.tabPanels.tabQueryResult.taskStatus = 0;
 								
 								if (res.data.data.result_cols != null) {
-									
 									columns.push({
 										title: '行号',
 										key: '',
 										type: 'index',
-										width: 80
+										width: 80,
+										align: 'left'
 									});
 									//如果结果集不为空，将后端传来的cols信息拼接成VUE Table的columns数组
-									if (res.data.data.result_cols.length >= 8) {
-										for (var index in res.data.data.result_cols) {
-											var colDict = {
-												title : res.data.data.result_cols[index], 
-												key :   res.data.data.result_cols[index],
-												width: 120
-											};
-											columns.push(colDict);
-										}
-									} else {
-										for (var index in res.data.data.result_cols) {
-											var colDict = {
-												title : res.data.data.result_cols[index], 
-												key :   res.data.data.result_cols[index]
-											};
-											columns.push(colDict);
-										}
+									for (var index in res.data.data.result_cols) {
+										var colDict = {
+											title : res.data.data.result_cols[index].col_name, 
+											key :   res.data.data.result_cols[index].col_name,
+											width:  res.data.data.result_cols[index].col_width,
+											align: 'left'
+										};
+										columns.push(colDict);
 									}
+									
 								} else {
 									//如果结果集为空啥都不用做
 								}
@@ -475,13 +484,16 @@
 							}
 							
 							//设置标签页数据
-							me.tabPanels.tabQueryResult.status = res.status;
+							me.tabPanels.tabQueryResult.ajaxStatus = res.status;
 							me.tabPanels.tabQueryResult.message = res.message;
-							me.tabPanels.tabQueryResult.data = res.data.data;
+							if (res.data != null && "data" in res.data && "type" in res.data) {
+								me.tabPanels.tabQueryResult.data = res.data.data;
+								me.tabPanels.tabQueryResult.contentType = res.data.type;
+							}
 							me.tabPanels.tabQueryResult.cols = columns;
-							me.tabPanels.tabQueryResult.contentType = res.data.type;
 							
 							me.currActiveTabPanel = "tabQueryResult";
+							
 						} else {
 							me.$Message.warning(res.message);
 						}
@@ -491,6 +503,58 @@
 					}
 				)
 			},
+			//点击查看错误
+			retrieveErrorByQueryId(item) {
+				var me = this;
+				var params = {queryHistId : item.id};
+				getQueryStatusById(params).then(
+					function (res) {
+						if (res.status == 0) {
+							
+							//设置标签页数据
+							me.tabPanels.tabQueryResult.ajaxStatus = res.status;
+							me.tabPanels.tabQueryResult.taskStatus = res.data.status;
+							me.tabPanels.tabQueryResult.message = res.data.message;
+							
+							//最后切换焦点到结果页tab上
+							me.currActiveTabPanel = "tabQueryResult";
+						} else {
+							me.$Message.error("查看错误失败! 查询语句Id: " + item.id);
+						} 
+					},
+					function (res) {
+						me.$Message.warning("查看错误失败! 查询语句Id: " + item.id);
+					}
+				)
+			},
+			//手动取消任务
+			cancelTaskByQueryId(item) {
+				var me = this;
+				var params = {queryHistId : item.id};
+				cancelTaskByIdAjax(params).then(
+					function (res) {
+						if (res.status == 0) {
+							//刷新一下查询历史界面
+							me.getQueryHistory();
+							me.$Message.success("任务取消成功!");
+							
+							window.clearInterval(me.clockQueryHistory[item.id]);
+						} else {
+							me.$Message.error("取消任务失败! 查询语句Id: " + item.id);
+							me.$Message.error(res.message);
+						} 
+					},
+					function (res) {
+						me.$Message.warning("取消任务失败! 查询语句Id: " + item.id);
+					}
+				)
+			},
+			//导出csv文件
+			exportData () {
+				var me = this;
+				var params = {queryHistId:me.tabPanels.tabQueryResult.queryHistId};
+				window.location.href="/hive_query/get_csv.json?queryHistId=" + me.tabPanels.tabQueryResult.queryHistId;
+            },
 			//点击查询历史单行重新填充sql_content输入框
 			refillSqlContent(row, index) {
 				this.sql_content = row.queryContent;
@@ -500,10 +564,6 @@
 				if (event.altKey && event.keyCode == 83) {
 					this.sendQuery();
 				}
-			},
-			resultPaging(pageNo) {
-				this.$Message.info(pageNo+"==================================");
-				console.log(pageNo);
 			}
         },
 		components: {

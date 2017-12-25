@@ -30,3 +30,7 @@ export function getQueryStatusById(params) {
 export function getHistoryResultById(params) {
 	return get('/hive_query/get_history_result.json', params);
 }
+
+export function cancelTaskByIdAjax(params) {
+	return get('/hive_query/cancel_task.json', params);
+}

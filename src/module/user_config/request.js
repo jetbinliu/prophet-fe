@@ -11,3 +11,8 @@ export function addProphetUserAjax(params) {
 	return post('/add_prophet_user.json', params);
 }
 
+export function deleteUserByIdAjax(params) {
+	return post('/delete_user_by_id.json', params);
+}
+
+
