@@ -6,10 +6,10 @@
 
 ``` bash
 # 安装依赖
-npm install
+npm install --registry=https://registry.npm.taobao.org
 
 # 安装vue-jsx插件
-npm install babel-plugin-transform-vue-jsx  -DS
+npm install babel-plugin-transform-vue-jsx -DS
 npm install babel-plugin-syntax-jsx -DS
 
 # 开发：以dev服务器模式启动，监听localhost:8080

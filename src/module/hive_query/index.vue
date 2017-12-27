@@ -466,14 +466,22 @@
 										width: 80,
 										align: 'left'
 									});
+									var colDict = {};
 									//如果结果集不为空，将后端传来的cols信息拼接成VUE Table的columns数组
 									for (var index in res.data.data.result_cols) {
-										var colDict = {
-											title : res.data.data.result_cols[index].col_name, 
-											key :   res.data.data.result_cols[index].col_name,
-											width:  res.data.data.result_cols[index].col_width,
-											align: 'left'
-										};
+										if (res.data.data.result_cols.length > 7) {
+											colDict = {
+												title : res.data.data.result_cols[index].col_name, 
+												key :   res.data.data.result_cols[index].col_name,
+												width:  res.data.data.result_cols[index].col_width,
+												align: 'left'
+											};
+										} else {
+											colDict = {
+												title : res.data.data.result_cols[index].col_name, 
+												key :   res.data.data.result_cols[index].col_name
+											};
+										}
 										columns.push(colDict);
 									}
 									
